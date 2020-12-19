@@ -15,7 +15,7 @@ import math
 
 train_datagen = ImageDataGenerator(rescale = 1./255)
 
-train_dir = os.path.join(r'C:\Users\Admin\Desktop\deeplearning\ajou cat project resnet 18\data\trainset')
+train_dir = os.path.join(r'C:\Users\Admin\Desktop\깃헙\ajou cat\data\trainset')
  
 train_generator = train_datagen.flow_from_directory(train_dir, batch_size=16, target_size=(224, 224), color_mode='rgb')
 
@@ -32,37 +32,29 @@ def conv1_layer(x):
     x = Activation('relu')(x)
  
     return x   
- 
+
+
 def conv2_layer(x):
-    shortcut = MaxPooling2D((2, 2), 2)(x)
+    x = ZeroPadding2D(padding=(1, 1))(x)
+    x = MaxPooling2D((3, 3), 2)(x)
+    shortcut = x
  
     for i in range(2):
-        if (i == 0):
-            x = ZeroPadding2D(padding=(1, 1))(x)
-            x = Conv2D(64, (3, 3), strides=(2, 2), padding='valid')(x)
-            x = BatchNormalization()(x)
-            x = Activation('relu')(x)
+        x = Conv2D(64, (3, 3), strides=(1, 1), padding='same')(x)
+        x = BatchNormalization()(x)
+        x = Activation('relu')(x)
 
-            x = Conv2D(64, (3, 3), strides=(1, 1), padding='same')(x)
-            x = BatchNormalization()(x)
-            x = Activation('relu')(x)
-            
-        else:
-            x = Conv2D(64, (3, 3), strides=(1, 1), padding='same')(x)
-            x = BatchNormalization()(x)
-            x = Activation('relu')(x)
+        x = Conv2D(64, (3, 3), strides=(1, 1), padding='same')(x)
+        x = BatchNormalization()(x)
+        x = x + shortcut
+        # x = add()([x, shortcut])
+        x = Activation('relu')(x)
 
-            x = Conv2D(64, (3, 3), strides=(1, 1), padding='same')(x)
-            x = BatchNormalization()(x)
- 
-            x = Add()([x, shortcut])   
-            x = Activation('relu')(x)
-    
     return x
- 
+
+
 def conv3_layer(x):
-    shortcut = MaxPooling2D((2, 2), 2)(x)
-    shortcut = Conv2D(128, (1, 1), strides=(1, 1), padding='valid')(shortcut)
+    shortcut = Conv2D(128, (1, 1), strides=(2, 2), padding='valid')(x)
     
     for i in range(2):     
         if(i == 0):
@@ -72,9 +64,10 @@ def conv3_layer(x):
             x = Activation('relu')(x)  
  
             x = Conv2D(128, (3, 3), strides=(1, 1), padding='same')(x)
-            x = BatchNormalization()(x)           
+            x = BatchNormalization()(x)
+            x = x + shortcut
             x = Activation('relu')(x)    
-        
+            shortcut = x
         else:
             x = Conv2D(128, (3, 3), strides=(1, 1), padding='same')(x)
             x = BatchNormalization()(x)
@@ -88,9 +81,9 @@ def conv3_layer(x):
             
     return x
 
+
 def conv4_layer(x):
-    shortcut = MaxPooling2D((2, 2), 2)(x)
-    shortcut = Conv2D(256, (1, 1), strides=(1, 1), padding='valid')(shortcut)
+    shortcut = Conv2D(256, (1, 1), strides=(2, 2), padding='valid')(x)
   
     for i in range(2):     
         if(i == 0):
@@ -101,7 +94,9 @@ def conv4_layer(x):
  
             x = Conv2D(256, (3, 3), strides=(1, 1), padding='same')(x)
             x = BatchNormalization()(x)
-            x = Activation('relu')(x)               
+            x = x + shortcut
+            x = Activation('relu')(x)
+            shortcut = x
         
         else:
             x = Conv2D(256, (3, 3), strides=(1, 1), padding='same')(x)
@@ -116,9 +111,9 @@ def conv4_layer(x):
  
     return x
 
+
 def conv5_layer(x):
-    shortcut = MaxPooling2D((2, 2), 2)(x)
-    shortcut = Conv2D(512, (1, 1), strides=(1, 1), padding='valid')(shortcut)
+    shortcut = Conv2D(512, (1, 1), strides=(2, 2), padding='valid')(x)
   
     for i in range(2):     
         if(i == 0):
@@ -128,8 +123,10 @@ def conv5_layer(x):
             x = Activation('relu')(x)  
  
             x = Conv2D(512, (3, 3), strides=(1, 1), padding='same')(x)
-            x = BatchNormalization()(x)              
-            x = Activation('relu')(x)                   
+            x = BatchNormalization()(x)
+            x = x + shortcut
+            x = Activation('relu')(x)
+            shortcut = x
         
         else:
             x = Conv2D(512, (3, 3), strides=(1, 1), padding='same')(x)
@@ -143,7 +140,8 @@ def conv5_layer(x):
             x = Activation('relu')(x)       
                   
     return x
- 
+
+
 x = conv1_layer(input_tensor)
 x = conv2_layer(x)
 x = conv3_layer(x)
@@ -157,7 +155,6 @@ resnet = Model(input_tensor, output_tensor)
 resnet.compile(loss = 'categorical_crossentropy', optimizer = 'rmsprop', metrics = ['accuracy'])
     
 resnet.fit(train_generator, steps_per_epoch = 10, epochs = 50)
-
 
 
 resnet_json = resnet.to_json()
